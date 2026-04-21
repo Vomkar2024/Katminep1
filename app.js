@@ -1,6 +1,8 @@
 const express = require('express');
 const parkingService = require('./parkingService');
 const { authenticate } = require('./middleware');
+const db = require('./db');
+const config = require('./config');
 
 const app = express();
 app.use(express.json());
@@ -18,12 +20,19 @@ app.post('/gate/entry', async (req, res) => {
     if (!tag || !gateId) {
         return res.status(400).json({ error: "tag and gateId are required." });
     }
+    if (typeof tag !== 'number' || !Number.isInteger(tag)) {
+        return res.status(400).json({ error: "tag must be an integer." });
+    }
 
     try {
         const result = await parkingService.processEntry(tag, gateId);
         res.status(200).json(result);
     } catch (err) {
-        res.status(400).json({ status: "error", message: err.message });
+        if (err.message.includes('does not exist') || err.message.includes('not active') || err.message.includes('already checked-in') || err.message.includes('not assigned') || err.message.includes('No free spaces')) {
+            res.status(400).json({ status: "error", message: err.message });
+        } else {
+            res.status(500).json({ status: "error", message: "Internal server error." });
+        }
     }
 });
 
@@ -35,12 +44,19 @@ app.post('/gate/exit', async (req, res) => {
     if (!tag || !gateId) {
         return res.status(400).json({ error: "tag and gateId are required." });
     }
+    if (typeof tag !== 'number' || !Number.isInteger(tag)) {
+        return res.status(400).json({ error: "tag must be an integer." });
+    }
 
     try {
         const result = await parkingService.processExit(tag, gateId);
         res.status(200).json(result);
     } catch (err) {
-        res.status(400).json({ status: "error", message: err.message });
+        if (err.message.includes('does not exist') || err.message.includes('not currently checked-in')) {
+            res.status(400).json({ status: "error", message: err.message });
+        } else {
+            res.status(500).json({ status: "error", message: "Internal server error." });
+        }
     }
 });
 
@@ -62,8 +78,12 @@ app.get('/capacity', async (req, res) => {
  * Get individual company capacity.
  */
 app.get('/company/:id/capacity', async (req, res) => {
+    const companyId = parseInt(req.params.id, 10);
+    if (isNaN(companyId)) {
+        return res.status(400).json({ error: "companyId must be an integer." });
+    }
     try {
-        const capacity = await parkingService.getCompanyCapacity(req.params.id);
+        const capacity = await parkingService.getCompanyCapacity(companyId);
         if (!capacity) return res.status(404).json({ error: "Company not found." });
         res.json(capacity);
     } catch (err) {
@@ -81,6 +101,12 @@ app.post('/companies', async (req, res) => {
     if (!companyId || !companyName || !totalSlots) {
         return res.status(400).json({ error: "companyId, companyName, and totalSlots are required." });
     }
+    if (!Number.isInteger(companyId) || companyId < 1) {
+        return res.status(400).json({ error: "companyId must be a positive integer." });
+    }
+    if (typeof companyName !== 'string' || companyName.trim().length === 0) {
+        return res.status(400).json({ error: "companyName must be a non-empty string." });
+    }
     if (totalSlots < 1 || totalSlots > 1000) {
         return res.status(400).json({ error: "totalSlots must be between 1 and 1000." });
     }
@@ -88,7 +114,11 @@ app.post('/companies', async (req, res) => {
         const result = await parkingService.createCompany(companyId, companyName, totalSlots);
         res.status(201).json({ status: "success", data: result });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        if (err.message.includes('duplicate') || err.message.includes('Duplicate')) {
+            res.status(409).json({ error: "Company already exists." });
+        } else {
+            res.status(500).json({ error: "Internal server error." });
+        }
     }
 });
 
@@ -96,7 +126,11 @@ app.post('/companies', async (req, res) => {
  * Update company slot capacity.
  */
 app.put('/companies/:id', async (req, res) => {
+    const companyId = parseInt(req.params.id, 10);
     const { totalSlots } = req.body;
+    if (isNaN(companyId)) {
+        return res.status(400).json({ error: "companyId must be an integer." });
+    }
     if (!totalSlots) {
         return res.status(400).json({ error: "totalSlots is required." });
     }
@@ -104,10 +138,14 @@ app.put('/companies/:id', async (req, res) => {
         return res.status(400).json({ error: "totalSlots must be between 1 and 1000." });
     }
     try {
-        const result = await parkingService.updateCompanyCapacity(req.params.id, totalSlots);
+        const result = await parkingService.updateCompanyCapacity(companyId, totalSlots);
         res.json({ status: "success", data: result });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        if (err.message.includes('not found')) {
+            res.status(404).json({ error: err.message });
+        } else {
+            res.status(500).json({ error: "Internal server error." });
+        }
     }
 });
 
@@ -115,11 +153,21 @@ app.put('/companies/:id', async (req, res) => {
  * Delete a company (only if no vehicles currently parked).
  */
 app.delete('/companies/:id', async (req, res) => {
+    const companyId = parseInt(req.params.id, 10);
+    if (isNaN(companyId)) {
+        return res.status(400).json({ error: "companyId must be an integer." });
+    }
     try {
-        const result = await parkingService.deleteCompany(req.params.id);
+        const result = await parkingService.deleteCompany(companyId);
         res.json({ status: "success", data: result });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        if (err.message.includes('not found')) {
+            res.status(404).json({ error: err.message });
+        } else if (err.message.includes('active vehicles')) {
+            res.status(409).json({ error: err.message });
+        } else {
+            res.status(500).json({ error: "Internal server error." });
+        }
     }
 });
 
@@ -135,7 +183,40 @@ app.get('/companies', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Parking System Unified Server running on port ${PORT}`);
+// --- Health Check Endpoint ---
+
+/**
+ * Health check for monitoring.
+ */
+app.get('/health', async (req, res) => {
+    const db = require('./db');
+    const dbHealthy = await db.isHealthy();
+    if (dbHealthy) {
+        res.json({ status: "healthy", database: "connected" });
+    } else {
+        res.status(503).json({ status: "unhealthy", database: "disconnected" });
+    }
+});
+
+const server = app.listen(config.port, () => {
+    console.log(`Parking System Unified Server running on port ${config.port}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    server.close(async () => {
+        await db.end();
+        console.log('Database pool closed.');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully...');
+    server.close(async () => {
+        await db.end();
+        console.log('Database pool closed.');
+        process.exit(0);
+    });
 });

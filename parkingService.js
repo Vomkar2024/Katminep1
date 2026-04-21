@@ -58,11 +58,18 @@ class ParkingService {
      * Create a new company with custom slot capacity.
      */
     async createCompany(companyId, companyName, totalSlots) {
-        await db.execute(
-            'INSERT INTO Companies (CompanyID, CompanyName, TotalSlots, OccupiedSlots) VALUES (?, ?, ?, 0)',
-            [companyId, companyName, totalSlots]
-        );
-        return { companyId, companyName, totalSlots };
+        try {
+            await db.execute(
+                'INSERT INTO Companies (CompanyID, CompanyName, TotalSlots, OccupiedSlots) VALUES (?, ?, ?, 0)',
+                [companyId, companyName, totalSlots]
+            );
+            return { companyId, companyName, totalSlots };
+        } catch (err) {
+            if (err.code === 'ER_DUP_ENTRY') {
+                throw new Error('Company already exists.');
+            }
+            throw err;
+        }
     }
 
     /**
@@ -127,12 +134,12 @@ class ParkingService {
             if (tagRecord.IsParked) throw new Error("Vehicle is already checked-in.");
             if (!tagRecord.CompanyID) throw new Error("Tag is not assigned to a company.");
 
-            // 2. Check Capacity
+            // 3. Check Capacity
             const capacity = await this.getCompanyCapacity(tagRecord.CompanyID);
             if (!capacity) throw new Error("Assigned company not found.");
             if (capacity.freeSpaces <= 0) throw new Error("No free spaces available for this company.");
 
-            // 3. Perform atomic entry updates
+            // 4. Perform atomic entry updates
             await connection.beginTransaction();
 
             await connection.execute(
@@ -187,25 +194,31 @@ class ParkingService {
             if (tags.length === 0) throw new Error("Tag does not exist.");
             if (!tags[0].IsParked) throw new Error("Vehicle is not currently checked-in.");
 
-            const companyId = tags[0].CompanyID;
+            const tagRecord = tags[0];
+            const companyId = tagRecord.CompanyID;
 
+            // 3. Check if active log exists
+            const [activeLogs] = await connection.execute(
+                'SELECT LogID FROM ParkingLogs WHERE TagNumber = ? AND ExitTime IS NULL',
+                [tag]
+            );
+            if (activeLogs.length === 0) throw new Error("No active parking log found.");
+
+            // 4. Perform atomic exit updates
             await connection.beginTransaction();
 
-            // Set exit time for the currently active log
             await connection.execute(
                 'UPDATE ParkingLogs SET ExitTime = CURRENT_TIMESTAMP WHERE TagNumber = ? AND ExitTime IS NULL',
                 [tag]
             );
 
-            // Update tag status
             await connection.execute(
                 'UPDATE RFID_Tags SET IsParked = FALSE WHERE TagNumber = ?',
                 [tag]
             );
 
-            // Decrement occupied slots
             await connection.execute(
-                'UPDATE Companies SET OccupiedSlots = OccupiedSlots - 1 WHERE CompanyID = ?',
+                'UPDATE Companies SET OccupiedSlots = OccupiedSlots - 1 WHERE CompanyID = ? AND OccupiedSlots > 0',
                 [companyId]
             );
 

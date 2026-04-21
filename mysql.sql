@@ -5,18 +5,23 @@ USE ParkingSystem;
 CREATE TABLE IF NOT EXISTS Companies (
     CompanyID INT PRIMARY KEY,
     CompanyName VARCHAR(50),
-    TotalSlots INT,
-    OccupiedSlots INT DEFAULT 0
+    TotalSlots INT NOT NULL CHECK (TotalSlots > 0),
+    OccupiedSlots INT DEFAULT 0 CHECK (OccupiedSlots >= 0)
 );
 
+CREATE INDEX idx_occupied ON Companies(CompanyID);
+
 CREATE TABLE IF NOT EXISTS RFID_Tags (
-    TagNumber INT PRIMARY KEY, -- 8-digit unique ID
-    CompanyID INT DEFAULT NULL, -- Links to Companies
-    IsActive BOOLEAN DEFAULT TRUE, -- Tag validation status
-    IsParked BOOLEAN DEFAULT FALSE, -- Tracks if the car is currently inside
+    TagNumber INT PRIMARY KEY,
+    CompanyID INT DEFAULT NULL,
+    IsActive BOOLEAN DEFAULT TRUE,
+    IsParked BOOLEAN DEFAULT FALSE,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (CompanyID) REFERENCES Companies (CompanyID)
 );
+
+CREATE INDEX idx_company ON RFID_Tags(CompanyID);
+CREATE INDEX idx_parked ON RFID_Tags(IsParked);
 
 CREATE TABLE IF NOT EXISTS Gates (
     GateID VARCHAR(50) PRIMARY KEY,
@@ -41,12 +46,9 @@ CREATE TABLE IF NOT EXISTS ParkingLogs (
     FOREIGN KEY (GateID) REFERENCES Gates (GateID)
 );
 
+CREATE INDEX idx_tag_exit ON ParkingLogs(TagNumber, ExitTime);
+CREATE INDEX idx_entry_time ON ParkingLogs(EntryTime);
+
 -- Initial companies can be inserted manually or via API
 -- Example:
 -- INSERT INTO Companies (CompanyID, CompanyName, TotalSlots, OccupiedSlots) VALUES (1, 'Company 1', 10, 0);
-
-SELECT R.TagNumber, C.CompanyName, C.TotalSlots, C.OccupiedSlots, (
-        C.TotalSlots - C.OccupiedSlots
-    ) AS FreeSpaces
-FROM RFID_Tags R
-    JOIN Companies C ON R.CompanyID = C.CompanyID;
