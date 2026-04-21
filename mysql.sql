@@ -18,28 +18,32 @@ CREATE TABLE IF NOT EXISTS RFID_Tags (
     FOREIGN KEY (CompanyID) REFERENCES Companies (CompanyID)
 );
 
+CREATE TABLE IF NOT EXISTS Gates (
+    GateID VARCHAR(50) PRIMARY KEY,
+    GateName VARCHAR(100),
+    GateType ENUM('entry', 'exit', 'both') DEFAULT 'both',
+    IsActive BOOLEAN DEFAULT TRUE
+);
+
+-- Insert default gates
+INSERT IGNORE INTO Gates (GateID, GateName, GateType) VALUES
+    ('GATE-01', 'Main Entry', 'both'),
+    ('GATE-02', 'Side Entry', 'both'),
+    ('GATE-03', 'Emergency', 'exit');
+
 CREATE TABLE IF NOT EXISTS ParkingLogs (
     LogID INT AUTO_INCREMENT PRIMARY KEY,
     TagNumber INT,
     GateID VARCHAR(50),
     EntryTime DATETIME DEFAULT CURRENT_TIMESTAMP,
     ExitTime DATETIME DEFAULT NULL,
-    FOREIGN KEY (TagNumber) REFERENCES RFID_Tags (TagNumber)
+    FOREIGN KEY (TagNumber) REFERENCES RFID_Tags (TagNumber),
+    FOREIGN KEY (GateID) REFERENCES Gates (GateID)
 );
 
--- 5. Insert the 5 Companies and their capacities
-INSERT IGNORE INTO
-    Companies (
-        CompanyID,
-        CompanyName,
-        TotalSlots,
-        OccupiedSlots
-    )
-VALUES (1, 'Company 1', 10, 0),
-    (2, 'Company 2', 30, 0),
-    (3, 'Company 3', 40, 0),
-    (4, 'Company 4', 50, 0),
-    (5, 'Company 5', 20, 0);
+-- Initial companies can be inserted manually or via API
+-- Example:
+-- INSERT INTO Companies (CompanyID, CompanyName, TotalSlots, OccupiedSlots) VALUES (1, 'Company 1', 10, 0);
 
 SELECT R.TagNumber, C.CompanyName, C.TotalSlots, C.OccupiedSlots, (
         C.TotalSlots - C.OccupiedSlots
