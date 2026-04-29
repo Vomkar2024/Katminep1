@@ -401,26 +401,26 @@
                 <div id="gate-feedback" class="feedback"></div>
             </div>
 
-            <!-- Add Company -->
-            <!--<div class="card">
+            <!-- Add Company & Setup -->
+            <div class="card">
                 <div class="card-header">
                     <span class="icon">🏢</span> Add Company
                 </div>
                 <div class="form-group">
-                    <label>Company ID</label>
-                    <input type="number" id="company-id-input" placeholder="12">
+                    <label>Company ID (Unique)</label>
+                    <input type="number" id="company-id-input" placeholder="e.g. 101">
                 </div>
                 <div class="form-group">
                     <label>Company Name</label>
-                    <input type="text" id="company-name-input" placeholder="Enter company name">
+                    <input type="text" id="company-name-input" placeholder="e.g. Global Tech">
                 </div>
                 <div class="form-group">
                     <label>Total Slots</label>
-                    <input type="number" id="total-slots-input" placeholder="50">
+                    <input type="number" id="total-slots-input" placeholder="e.g. 25">
                 </div>
-                <button class="btn-primary btn-wide" onclick="addCompany()">Add Company & Generate Tags</button>
+                <button class="btn-primary btn-wide" onclick="addCompany()">Register Company</button>
                 <div id="company-feedback" class="feedback"></div>
-            </div> -->
+            </div>
 
             <!-- Company Management -->
             <div class="card">
@@ -456,12 +456,38 @@
                 </div>
             </div>
 
+            <!-- Recent Activity Logs -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <span class="icon">📜</span> Recent Activity Logs
+                </div>
+                <div class="table-wrapper">
+                    <table id="logs-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Tag Number</th>
+                                <th>Company</th>
+                                <th>Type</th>
+                                <th>Gate</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-body">
+                            <tr>
+                                <td colspan="6" style="text-align:center; color:var(--text-dim);">No recent activity.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Generated Tags -->
             <div class="card full-width">
                 <div class="card-header">
-                    <span class="icon">🏷️</span> Generated Tags
+                    <span class="icon">🏷️</span> Tag Directory
                 </div>
-                <button class="btn-refresh" onclick="fetchTags()">Refresh</button>
+                <button class="btn-refresh" onclick="fetchTags()">Refresh List</button>
                 <div class="table-wrapper">
                     <table id="tags-table">
                         <thead>
@@ -474,7 +500,7 @@
                         </thead>
                         <tbody id="tags-body">
                             <tr>
-                                <td colspan="4" style="text-align:center; color:var(--text-dim);">Loading...</td>
+                                <td colspan="4" style="text-align:center; color:var(--text-dim);">Loading tags...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -542,6 +568,7 @@
                     fetchCapacity();
                     fetchTags();
                     fetchCompanies();
+                    fetchLogs();
                 } else {
                     feedback.textContent = res.message || res.error || 'Action failed.';
                     feedback.className = 'feedback error';
@@ -631,6 +658,36 @@
             }
         }
 
+        async function fetchLogs() {
+            try {
+                const res = await apiCall('/logs');
+                const tbody = document.getElementById('logs-body');
+                if (res.status === 'success' && res.data) {
+                    if (res.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-dim);">No recent activity.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = res.data.map(l => {
+                        const isEntry = l.ExitTime === null;
+                        const time = isEntry ? new Date(l.EntryTime) : new Date(l.ExitTime);
+                        const gate = isEntry ? l.EntryGateID : l.ExitGateID;
+                        return `
+                            <tr>
+                                <td style="font-family:monospace; font-size:0.8rem;">${time.toLocaleString()}</td>
+                                <td>${l.TagNumber}</td>
+                                <td>${l.CompanyName}</td>
+                                <td><span class="badge ${isEntry ? 'badge-active' : 'badge-inactive'}">${isEntry ? 'ENTRY' : 'EXIT'}</span></td>
+                                <td>${gate}</td>
+                                <td><span class="badge badge-active">Granted</span></td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                console.error('Failed to fetch logs', e);
+            }
+        }
+
         async function fetchTags() {
             const feedback = document.getElementById('tags-feedback');
             try {
@@ -661,12 +718,14 @@
         fetchCompanies();
         fetchCapacity();
         fetchTags();
+        fetchLogs();
 
         // Auto-refresh capacity every 10 seconds
         setInterval(() => {
             fetchHealth();
             fetchCapacity();
             fetchCompanies();
+            fetchLogs();
         }, 10000);
     </script>
 </body>

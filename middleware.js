@@ -10,6 +10,7 @@ const PUBLIC_PATHS = [
     '/capacity',
     '/tags',
     '/companies',
+    '/logs',
 ];
 
 function isPublicPath(path) {

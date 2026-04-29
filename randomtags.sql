@@ -27,8 +27,12 @@ CREATE TABLE IF NOT EXISTS ParkingLogs (
     ExitGateID VARCHAR(50) DEFAULT NULL,
     EntryTime DATETIME DEFAULT CURRENT_TIMESTAMP,
     ExitTime DATETIME DEFAULT NULL,
-    FOREIGN KEY (TagNumber) REFERENCES RFID_Tags (TagNumber)
+    FOREIGN KEY (TagNumber) REFERENCES RFID_Tags (TagNumber),
+    INDEX (TagNumber),
+    INDEX (EntryTime)
 );
+
+CREATE INDEX idx_company_id ON RFID_Tags (CompanyID);
 
 CREATE TABLE IF NOT EXISTS Gates (
     GateID VARCHAR(50) PRIMARY KEY,

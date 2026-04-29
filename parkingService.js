@@ -115,6 +115,24 @@ class ParkingService {
         const [tags] = await db.execute('SELECT TagNumber, CompanyID, IsActive, IsParked FROM RFID_Tags ORDER BY CompanyID, TagNumber');
         return tags;
     }
+    
+    /**
+     * Get recent activities.
+     */
+    async getRecentLogs(limit = 20) {
+        const query = `
+            SELECT 
+                p.LogID, p.TagNumber, p.EntryGateID, p.ExitGateID, p.EntryTime, p.ExitTime,
+                r.CompanyID, c.CompanyName
+            FROM ParkingLogs p
+            JOIN RFID_Tags r ON p.TagNumber = r.TagNumber
+            JOIN Companies c ON r.CompanyID = c.CompanyID
+            ORDER BY p.EntryTime DESC
+            LIMIT ?
+        `;
+        const [logs] = await db.execute(query, [limit]);
+        return logs;
+    }
 
     /**
      * Process vehicle entry.

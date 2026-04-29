@@ -220,6 +220,19 @@ app.get('/tags', async (req, res) => {
     }
 });
 
+/**
+ * Get recent activity logs.
+ */
+app.get('/logs', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit, 10) || 20;
+        const logs = await parkingService.getRecentLogs(limit);
+        res.json({ status: "success", data: logs });
+    } catch (err) {
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+
 // --- Health Check Endpoint ---
 
 /**
