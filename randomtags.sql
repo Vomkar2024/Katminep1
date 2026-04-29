@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS Companies (
 CREATE TABLE IF NOT EXISTS RFID_Tags (
     TagNumber INT PRIMARY KEY, -- 7-digit unique ID
     CompanyID INT DEFAULT NULL, 
+    -- Company VARCHAR(50), -- add company column
     IsActive BOOLEAN DEFAULT TRUE, 
     IsParked BOOLEAN DEFAULT FALSE, 
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -62,7 +63,6 @@ VALUES
 -- 5. Final Report
 -- Verify that each company has exactly 10 tags assigned
 SELECT 
-    C.CompanyName, 
     COUNT(R.TagNumber) AS TagsAssigned,
     C.TotalSlots,
     (C.TotalSlots - C.OccupiedSlots) AS AvailableSpaces
