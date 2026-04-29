@@ -1,49 +1,48 @@
--- 1. COMPLETE PURGE (The "Nuclear" Option)
--- This deletes the database and all its hidden metadata
-DROP DATABASE IF EXISTS parkingsystem;
-CREATE DATABASE parkingsystem;
-USE parkingsystem;
+CREATE DATABASE IF NOT EXISTS ParkingSystem;
 
--- 2. CREATE COMPANIES (Parent)
-CREATE TABLE companies (
-    company_id INT NOT NULL AUTO_INCREMENT,
-    company_name VARCHAR(50) NOT NULL,
-    total_slots INT NOT NULL,
-    occupied_slots INT DEFAULT 0,
-    PRIMARY KEY (company_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+USE ParkingSystem;
 
--- 3. CREATE PARKING_TAGS (Child)
-CREATE TABLE parking_tags (
-    tag_number INT NOT NULL,
-    company_id INT NOT NULL,
-    is_parked BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY (tag_number),
-    CONSTRAINT fk_company_id 
-        FOREIGN KEY (company_id) 
-        REFERENCES companies (company_id) 
-        ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS Companies (
+    CompanyID INT PRIMARY KEY,
+    CompanyName VARCHAR(50),
+    TotalSlots INT,
+    OccupiedSlots INT DEFAULT 0
+);
 
--- 4. CREATE PARKING_LOGS (Grandchild)
-CREATE TABLE parking_logs (
-    log_id INT NOT NULL AUTO_INCREMENT,
-    tag_number INT NOT NULL,
-    entry_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    exit_time DATETIME NULL,
-    PRIMARY KEY (log_id),
-    CONSTRAINT fk_tag_number 
-        FOREIGN KEY (tag_number) 
-        REFERENCES parking_tags (tag_number) 
-        ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS RFID_Tags (
+    TagNumber INT PRIMARY KEY, -- 8-digit unique ID
+    CompanyID INT DEFAULT NULL, -- Links to Companies
+    IsActive BOOLEAN DEFAULT TRUE, -- Tag validation status
+    IsParked BOOLEAN DEFAULT FALSE, -- Tracks if the car is currently inside
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CompanyID) REFERENCES Companies (CompanyID)
+);
 
--- 5. RE-INSERT DATA
-INSERT INTO companies (company_id, company_name, total_slots) VALUES
-(1, 'Company 1', 10), (2, 'Company 2', 30), (3, 'Company 3', 40), (4, 'Company 4', 50), (5, 'Company 5', 20);
+CREATE TABLE IF NOT EXISTS ParkingLogs (
+    LogID INT AUTO_INCREMENT PRIMARY KEY,
+    TagNumber INT,
+    GateID VARCHAR(50),
+    EntryTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ExitTime DATETIME DEFAULT NULL,
+    FOREIGN KEY (TagNumber) REFERENCES RFID_Tags (TagNumber)
+);
 
-INSERT INTO parking_tags (tag_number, company_id) VALUES
-(10293847, 1), (84729103, 1), (39184752, 1),
-(57281934, 2), (91827365, 2), (28374659, 2);
+-- 5. Insert the 5 Companies and their capacities
+INSERT IGNORE INTO
+    Companies (
+        CompanyID,
+        CompanyName,
+        TotalSlots,
+        OccupiedSlots
+    )
+VALUES (1, 'Company 1', 10, 0),
+    (2, 'Company 2', 30, 0),
+    (3, 'Company 3', 40, 0),
+    (4, 'Company 4', 50, 0),
+    (5, 'Company 5', 20, 0);
 
-
+SELECT R.TagNumber, C.CompanyName, C.TotalSlots, C.OccupiedSlots, (
+        C.TotalSlots - C.OccupiedSlots
+    ) AS FreeSpaces
+FROM RFID_Tags R
+    JOIN Companies C ON R.CompanyID = C.CompanyID;
