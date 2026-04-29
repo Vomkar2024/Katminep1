@@ -66,7 +66,7 @@ class ParkingService {
             return { companyId, companyName, totalSlots };
         } catch (err) {
             if (err.code === 'ER_DUP_ENTRY') {
-                throw new Error('Company already exists.');
+                throw new Error('Company already exists');
             }
             throw err;
         }
@@ -80,7 +80,7 @@ class ParkingService {
             'UPDATE Companies SET TotalSlots = ? WHERE CompanyID = ?',
             [totalSlots, companyId]
         );
-        if (result.affectedRows === 0) throw new Error("Company not found.");
+        if (result.affectedRows === 0) throw new Error("Company not found");
         return { companyId, totalSlots };
     }
 
@@ -93,10 +93,10 @@ class ParkingService {
             [companyId]
         );
         if (logs[0].activeCount > 0) {
-            throw new Error("Cannot delete company with active vehicles.");
+            throw new Error("Cannot delete company with active vehicles");
         }
         const [result] = await db.execute('DELETE FROM Companies WHERE CompanyID = ?', [companyId]);
-        if (result.affectedRows === 0) throw new Error("Company not found.");
+        if (result.affectedRows === 0) throw new Error("Company not found");
         return { companyId };
     }
 
@@ -122,12 +122,16 @@ class ParkingService {
     async processEntry(tag, gateId) {
         const connection = await db.getConnection();
         try {
-            // 1. Validate GateID
+            await connection.beginTransaction();
+
+            // 1. Validate GateID (GATE-01 is for entry)
+            if (gateId !== 'GATE-01') throw new Error("Invalid gate for entry. Please use GATE-01.");
+
             const [gates] = await connection.execute(
                 'SELECT * FROM Gates WHERE GateID = ? AND IsActive = TRUE',
                 [gateId]
             );
-            if (gates.length === 0) throw new Error("Invalid or inactive gate.");
+            if (gates.length === 0) throw new Error("Invalid or inactive gate");
 
             // 2. Validate Tag existence and stats
             const [tags] = await connection.execute(
@@ -135,23 +139,33 @@ class ParkingService {
                 [tag]
             );
 
-            if (tags.length === 0) throw new Error("Tag does not exist.");
+            if (tags.length === 0) throw new Error("Tag does not exist");
             const tagRecord = tags[0];
 
-            if (!tagRecord.IsActive) throw new Error("Tag is not active.");
-            if (tagRecord.IsParked) throw new Error("Vehicle is already checked-in.");
-            if (!tagRecord.CompanyID) throw new Error("Tag is not assigned to a company.");
+            if (!tagRecord.IsActive) throw new Error("Tag is not active");
+            if (tagRecord.IsParked) throw new Error("Vehicle is already checked-in");
+            if (!tagRecord.CompanyID) throw new Error("Tag is not assigned to a company");
 
-            // 3. Check Capacity
-            const capacity = await this.getCompanyCapacity(tagRecord.CompanyID);
-            if (!capacity) throw new Error("Assigned company not found.");
-            if (capacity.freeSpaces <= 0) throw new Error("No free spaces available for this company.");
+            // 3. Check Capacity (inside transaction for atomicity)
+            const [companyResult] = await connection.execute(
+                'SELECT CompanyName, TotalSlots, OccupiedSlots FROM Companies WHERE CompanyID = ?',
+                [tagRecord.CompanyID]
+            );
+            if (companyResult.length === 0) throw new Error("Assigned company not found");
+
+            const company = companyResult[0];
+            const [liveCountRes] = await connection.execute(
+                'SELECT COUNT(*) AS activeVehicles FROM ParkingLogs p JOIN RFID_Tags r ON p.TagNumber = r.TagNumber WHERE r.CompanyID = ? AND p.ExitTime IS NULL',
+                [tagRecord.CompanyID]
+            );
+            const activeVehicles = liveCountRes[0].activeVehicles;
+            const freeSpaces = company.TotalSlots - activeVehicles;
+
+            if (freeSpaces <= 0) throw new Error("No free spaces available for this company");
 
             // 4. Perform atomic entry updates
-            await connection.beginTransaction();
-
             await connection.execute(
-                'INSERT INTO ParkingLogs (TagNumber, GateID) VALUES (?, ?)',
+                'INSERT INTO ParkingLogs (TagNumber, EntryGateID) VALUES (?, ?)',
                 [tag, gateId]
             );
 
@@ -168,8 +182,8 @@ class ParkingService {
             await connection.commit();
             return {
                 status: "success",
-                message: "Entry granted.",
-                freeSpacesRemaining: capacity.freeSpaces - 1
+                message: "Entry granted",
+                freeSpacesRemaining: freeSpaces - 1
             };
 
         } catch (err) {
@@ -186,12 +200,16 @@ class ParkingService {
     async processExit(tag, gateId) {
         const connection = await db.getConnection();
         try {
-            // 1. Validate GateID
+            await connection.beginTransaction();
+
+            // 1. Validate GateID (GATE-02 is for exit)
+            if (gateId !== 'GATE-02') throw new Error("Invalid gate for exit. Please use GATE-02.");
+
             const [gates] = await connection.execute(
                 'SELECT * FROM Gates WHERE GateID = ? AND IsActive = TRUE',
                 [gateId]
             );
-            if (gates.length === 0) throw new Error("Invalid or inactive gate.");
+            if (gates.length === 0) throw new Error("Invalid or inactive gate");
 
             // 2. Validate tag
             const [tags] = await connection.execute(
@@ -199,8 +217,8 @@ class ParkingService {
                 [tag]
             );
 
-            if (tags.length === 0) throw new Error("Tag does not exist.");
-            if (!tags[0].IsParked) throw new Error("Vehicle is not currently checked-in.");
+            if (tags.length === 0) throw new Error("Tag does not exist");
+            if (!tags[0].IsParked) throw new Error("Vehicle is not currently checked-in");
 
             const tagRecord = tags[0];
             const companyId = tagRecord.CompanyID;
@@ -210,14 +228,12 @@ class ParkingService {
                 'SELECT LogID FROM ParkingLogs WHERE TagNumber = ? AND ExitTime IS NULL',
                 [tag]
             );
-            if (activeLogs.length === 0) throw new Error("No active parking log found.");
+            if (activeLogs.length === 0) throw new Error("No active parking log found");
 
             // 4. Perform atomic exit updates
-            await connection.beginTransaction();
-
             await connection.execute(
-                'UPDATE ParkingLogs SET ExitTime = CURRENT_TIMESTAMP WHERE TagNumber = ? AND ExitTime IS NULL',
-                [tag]
+                'UPDATE ParkingLogs SET ExitTime = CURRENT_TIMESTAMP, ExitGateID = ? WHERE TagNumber = ? AND ExitTime IS NULL',
+                [gateId, tag]
             );
 
             await connection.execute(
@@ -231,7 +247,7 @@ class ParkingService {
             );
 
             await connection.commit();
-            return { status: "success", message: "Exit granted." };
+            return { status: "success", message: "Exit granted" };
 
         } catch (err) {
             await connection.rollback();

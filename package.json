@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "init-db": "mysql -u root -p < mysql.sql"
+    "init-db": "mysql -u root -p < randomtags.sql"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

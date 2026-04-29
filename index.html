@@ -388,15 +388,15 @@
                     <input type="number" id="tag-input" placeholder="Enter RFID tag number">
                 </div>
                 <div class="form-group">
-                    <label>Gate ID</label>
-                    <select id="gate-input">
-                        <option value="GATE-01">GATE-01</option>
-                        <option value="GATE-02">GATE-02</option>
-                    </select>
+                    <label>Assigned Gates</label>
+                    <div style="font-size: 0.85rem; color: var(--text-dim);">
+                        Entry: <span style="color: var(--success-color); font-weight: 600;">GATE-01</span><br>
+                        Exit: <span style="color: var(--error-color); font-weight: 600;">GATE-02</span>
+                    </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn-success" onclick="processGate('entry')">Entry</button>
-                    <button class="btn-danger" onclick="processGate('exit')">Exit</button>
+                    <button class="btn-success" onclick="processGate('entry', 'GATE-01')">Entry</button>
+                    <button class="btn-danger" onclick="processGate('exit', 'GATE-02')">Exit</button>
                 </div>
                 <div id="gate-feedback" class="feedback"></div>
             </div>
@@ -523,9 +523,8 @@
             }
         }
 
-        async function processGate(type) {
+        async function processGate(type, gateId) {
             const tag = parseInt(document.getElementById('tag-input').value);
-            const gateId = document.getElementById('gate-input').value;
             const feedback = document.getElementById('gate-feedback');
 
             if (!tag) {

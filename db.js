@@ -1,51 +1,70 @@
 const mysql = require('mysql2/promise');
 const config = require('./config');
 
-// Standard pool configuration
 const pool = mysql.createPool({
     host: config.db.host,
-    port: config.db.port,
     user: config.db.user,
     password: config.db.password,
     database: config.db.database,
+    port: config.db.port || 3306,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
     enableKeepAlive: true,
-    keepAliveInitialDelay: 0
+    keepAliveInitialDelay: 0,
+    acquireTimeout: 60000,
+    connectTimeout: 10000,
+    timeout: 60000
 });
 
-// Track initialization state
 let initialized = false;
 let initError = null;
 
-// Test connection on startup
 async function testConnection() {
     try {
         const connection = await pool.getConnection();
-        console.log('✓ Database connected successfully');
+        await connection.ping();
         connection.release();
         initialized = true;
+        console.log('Database connected successfully.');
     } catch (err) {
-        console.error('✗ Database connection failed:', err.message);
         initError = err;
-        // Don't exit - allow app to start for health checks
+        console.error('Database connection failed:', err.message);
     }
 }
 
 testConnection();
 
-// Health check method
+pool.on('error', (err) => {
+    console.error('Unexpected database pool error:', err);
+    initialized = false;
+});
+
+async function execute(query, params) {
+    return pool.execute(query, params);
+}
+
+async function getConnection() {
+    return pool.getConnection();
+}
+
 async function isHealthy() {
-    if (!initialized || initError) return false;
+    if (initError) return false;
     try {
-        const conn = await pool.getConnection();
-        conn.release();
-        return true;
-    } catch {
+        const [rows] = await pool.execute('SELECT 1 AS healthy');
+        return rows[0].healthy === 1;
+    } catch (err) {
         return false;
     }
 }
 
-module.exports = pool;
-module.exports.isHealthy = isHealthy;
+async function end() {
+    await pool.end();
+}
+
+module.exports = {
+    execute,
+    getConnection,
+    isHealthy,
+    end
+};

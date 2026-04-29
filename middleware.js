@@ -3,7 +3,7 @@
  */
 
 const config = require('./config');
-const API_KEY = config.apiKey;
+const API_KEY = config.apiKey || 'parking-secret-key-2026';
 
 // Public endpoints (no auth required)
 const PUBLIC_PATHS = [

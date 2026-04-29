@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm install *)",
       "Bash(dir *)",
-      "Bash(powershell *)"
+      "Bash(powershell *)",
+      "Bash(npm run *)",
+      "Bash(cd /d E:\\\\Office\\\\Katminep1)",
+      "Bash(node -c app.js)",
+      "Bash(node *)"
     ]
   }
 }
