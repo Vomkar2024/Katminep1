@@ -13,11 +13,7 @@ const PUBLIC_PATHS = [
 ];
 
 function isPublicPath(path) {
-    // Check exact match
-    if (PUBLIC_PATHS.includes(path)) return true;
-    // Check /company/:id/capacity pattern
-    if (/^\/company\/[^/]+\/capacity$/.test(path)) return true;
-    return false;
+    return PUBLIC_PATHS.includes(path) || /^\/company\/[^/]+\/capacity$/.test(path);
 }
 
 function authenticate(req, res, next) {

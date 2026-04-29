@@ -29,6 +29,13 @@ CREATE TABLE IF NOT EXISTS ParkingLogs (
     FOREIGN KEY (TagNumber) REFERENCES RFID_Tags (TagNumber)
 );
 
+CREATE TABLE IF NOT EXISTS Gates (
+    GateID VARCHAR(50) PRIMARY KEY,
+    IsActive BOOLEAN DEFAULT TRUE
+);
+
+INSERT INTO Gates (GateID, IsActive) VALUES ('GATE-01', TRUE), ('GATE-02', TRUE);
+
 -- 3. Insert 2 Companies with 10 slots each
 INSERT INTO Companies (CompanyID, CompanyName, TotalSlots, OccupiedSlots)
 VALUES 
