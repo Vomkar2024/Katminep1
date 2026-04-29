@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -155,7 +156,8 @@
             margin-bottom: 6px;
         }
 
-        input, select {
+        input,
+        select {
             width: 100%;
             background: #0f172a;
             border: 1px solid var(--border-color);
@@ -187,14 +189,29 @@
             color: white;
         }
 
-        .btn-primary { background-color: var(--accent-color); }
-        .btn-primary:hover { background-color: #2563eb; }
+        .btn-primary {
+            background-color: var(--accent-color);
+        }
 
-        .btn-success { background-color: var(--success-color); }
-        .btn-success:hover { background-color: #059669; }
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
 
-        .btn-danger { background-color: var(--error-color); }
-        .btn-danger:hover { background-color: #dc2626; }
+        .btn-success {
+            background-color: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+        }
+
+        .btn-danger {
+            background-color: var(--error-color);
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
 
         .btn-wide {
             grid-column: span 2;
@@ -209,8 +226,20 @@
             font-size: 0.8rem;
             display: none;
         }
-        .feedback.error { display: block; background: rgba(239, 68, 68, 0.1); color: var(--error-color); border: 1px solid rgba(239, 68, 68, 0.2); }
-        .feedback.success { display: block; background: rgba(16, 185, 129, 0.1); color: var(--success-color); border: 1px solid rgba(16, 185, 129, 0.2); }
+
+        .feedback.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .feedback.success {
+            display: block;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
 
         /* Capacity Overview */
         .full-width {
@@ -293,9 +322,20 @@
             font-weight: 500;
         }
 
-        .badge-active { background: rgba(16, 185, 129, 0.1); color: var(--success-color); }
-        .badge-inactive { background: rgba(239, 68, 68, 0.1); color: var(--error-color); }
-        .badge-parked { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+        .badge-active {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .badge-inactive {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        .badge-parked {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
 
         .btn-refresh {
             background: #334155;
@@ -305,11 +345,17 @@
         }
 
         @media (max-width: 900px) {
-            .grid { grid-template-columns: 1fr; }
-            .full-width { grid-column: span 1; }
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full-width {
+                grid-column: span 1;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="container">
@@ -390,7 +436,9 @@
                             </tr>
                         </thead>
                         <tbody id="companies-body">
-                            <tr><td colspan="3" style="text-align:center; color:var(--text-dim);">Loading...</td></tr>
+                            <tr>
+                                <td colspan="3" style="text-align:center; color:var(--text-dim);">Loading...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -423,7 +471,9 @@
                             </tr>
                         </thead>
                         <tbody id="tags-body">
-                            <tr><td colspan="4" style="text-align:center; color:var(--text-dim);">Loading...</td></tr>
+                            <tr>
+                                <td colspan="4" style="text-align:center; color:var(--text-dim);">Loading...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -445,7 +495,7 @@
                 }
             };
             if (body) options.body = JSON.stringify(body);
-            
+
             const response = await fetch(`${API_BASE}${endpoint}`, options);
             return await response.json();
         }
@@ -475,7 +525,7 @@
             const tag = parseInt(document.getElementById('tag-input').value);
             const gateId = document.getElementById('gate-input').value;
             const feedback = document.getElementById('gate-feedback');
-            
+
             if (!tag) {
                 feedback.textContent = 'Please enter a valid tag number.';
                 feedback.className = 'feedback error';
@@ -616,4 +666,5 @@
         }, 10000);
     </script>
 </body>
+
 </html>
