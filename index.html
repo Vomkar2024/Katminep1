@@ -434,11 +434,12 @@
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Slots</th>
+                                <th>Free Slots</th>
                             </tr>
                         </thead>
                         <tbody id="companies-body">
                             <tr>
-                                <td colspan="3" style="text-align:center; color:var(--text-dim);">Loading...</td>
+                                <td colspan="4" style="text-align:center; color:var(--text-dim);">Loading...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -541,6 +542,7 @@
                     // Refresh data
                     fetchCapacity();
                     fetchTags();
+                    fetchCompanies();
                 } else {
                     feedback.textContent = res.message || res.error || 'Action failed.';
                     feedback.className = 'feedback error';
@@ -590,7 +592,7 @@
             const tbody = document.getElementById('companies-body');
             if (res.status === 'success' && res.data) {
                 if (res.data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No companies found.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No companies found.</td></tr>';
                     return;
                 }
                 tbody.innerHTML = res.data.map(c => `
@@ -598,6 +600,7 @@
                         <td>${c.CompanyID}</td>
                         <td>${c.CompanyName}</td>
                         <td>${c.TotalSlots}</td>
+                        <td style="color: var(--success-color); font-weight: 600;">${c.TotalSlots - c.OccupiedSlots}</td>
                     </tr>
                 `).join('');
             }
@@ -664,6 +667,7 @@
         setInterval(() => {
             fetchHealth();
             fetchCapacity();
+            fetchCompanies();
         }, 10000);
     </script>
 </body>
