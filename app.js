@@ -7,6 +7,20 @@ const config = require('./config');
 const app = express();
 app.use(express.json());
 
+// Enable CORS for frontend
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');
+    if (req.method === 'OPTIONS') return res.sendStatus(200);
+    next();
+});
+
+// Serve frontend
+app.get('/', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'index.html'));
+});
+
 // Apply authentication to all routes except capacity endpoints
 app.use(authenticate);
 
@@ -178,6 +192,18 @@ app.get('/companies', async (req, res) => {
     try {
         const companies = await parkingService.getAllCompanies();
         res.json({ status: "success", data: companies });
+    } catch (err) {
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+
+/**
+ * List all tags.
+ */
+app.get('/tags', async (req, res) => {
+    try {
+        const tags = await parkingService.getAllTags();
+        res.json({ status: "success", data: tags });
     } catch (err) {
         res.status(500).json({ error: "Internal server error." });
     }

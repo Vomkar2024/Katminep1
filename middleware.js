@@ -8,6 +8,8 @@ const API_KEY = config.apiKey;
 // Public endpoints (no auth required)
 const PUBLIC_PATHS = [
     '/capacity',
+    '/tags',
+    '/companies',
 ];
 
 function isPublicPath(path) {

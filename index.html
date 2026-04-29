@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katminep1 - Parking Management System</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --accent-color: #3b82f6;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Status Badge */
+        .status-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 6px 16px;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            color: var(--success-color);
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success-color);
+        }
+
+        /* API Key Section */
+        .api-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .api-label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .api-input {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-radius: 6px;
+            color: var(--text-main);
+            font-family: monospace;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 1.1rem;
+        }
+
+        .icon {
+            font-size: 1.2rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            transition: all 0.2s;
+            color: white;
+        }
+
+        .btn-primary { background-color: var(--accent-color); }
+        .btn-primary:hover { background-color: #2563eb; }
+
+        .btn-success { background-color: var(--success-color); }
+        .btn-success:hover { background-color: #059669; }
+
+        .btn-danger { background-color: var(--error-color); }
+        .btn-danger:hover { background-color: #dc2626; }
+
+        .btn-wide {
+            grid-column: span 2;
+            margin-top: 8px;
+        }
+
+        /* Notification area */
+        .feedback {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            display: none;
+        }
+        .feedback.error { display: block; background: rgba(239, 68, 68, 0.1); color: var(--error-color); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .feedback.success { display: block; background: rgba(16, 185, 129, 0.1); color: var(--success-color); border: 1px solid rgba(16, 185, 129, 0.2); }
+
+        /* Capacity Overview */
+        .full-width {
+            grid-column: span 3;
+        }
+
+        .capacity-item {
+            margin-bottom: 20px;
+        }
+
+        .capacity-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .company-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .slot-count {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .progress-container {
+            height: 10px;
+            background: #0f172a;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #3b82f6, #60a5fa);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .available-text {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-align: right;
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-active { background: rgba(16, 185, 129, 0.1); color: var(--success-color); }
+        .badge-inactive { background: rgba(239, 68, 68, 0.1); color: var(--error-color); }
+        .badge-parked { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+
+        .btn-refresh {
+            background: #334155;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Katminep1</h1>
+            <div class="subtitle">RFID-Based Parking Management System</div>
+        </header>
+
+        <div class="status-container">
+            <div class="status-badge" id="system-status">
+                <div class="status-dot"></div>
+                Checking System Status...
+            </div>
+        </div>
+
+        <div class="api-section">
+            <label class="api-label">API Key (for authenticated endpoints)</label>
+            <input type="text" id="api-key" class="api-input" value="parking-secret-key-2026">
+        </div>
+
+        <div class="grid">
+            <!-- Gate Control -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="icon">🚗</span> Gate Control
+                </div>
+                <div class="form-group">
+                    <label>RFID Tag Number</label>
+                    <input type="number" id="tag-input" placeholder="Enter RFID tag number">
+                </div>
+                <div class="form-group">
+                    <label>Gate ID</label>
+                    <select id="gate-input">
+                        <option value="GATE-01">GATE-01</option>
+                        <option value="GATE-02">GATE-02</option>
+                    </select>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-success" onclick="processGate('entry')">Entry</button>
+                    <button class="btn-danger" onclick="processGate('exit')">Exit</button>
+                </div>
+                <div id="gate-feedback" class="feedback"></div>
+            </div>
+
+            <!-- Add Company -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="icon">🏢</span> Add Company
+                </div>
+                <div class="form-group">
+                    <label>Company ID</label>
+                    <input type="number" id="company-id-input" placeholder="12">
+                </div>
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" id="company-name-input" placeholder="Enter company name">
+                </div>
+                <div class="form-group">
+                    <label>Total Slots</label>
+                    <input type="number" id="total-slots-input" placeholder="50">
+                </div>
+                <button class="btn-primary btn-wide" onclick="addCompany()">Add Company & Generate Tags</button>
+                <div id="company-feedback" class="feedback"></div>
+            </div>
+
+            <!-- Company Management -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="icon">📋</span> Company Management
+                </div>
+                <div class="table-wrapper">
+                    <table id="companies-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Slots</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companies-body">
+                            <tr><td colspan="3" style="text-align:center; color:var(--text-dim);">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Capacity Overview -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <span class="icon">📊</span> Capacity Overview
+                </div>
+                <div id="capacity-overview-list">
+                    <!-- Dynamic Progress Bars -->
+                </div>
+            </div>
+
+            <!-- Generated Tags -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <span class="icon">🏷️</span> Generated Tags
+                </div>
+                <button class="btn-refresh" onclick="fetchTags()">Refresh</button>
+                <div class="table-wrapper">
+                    <table id="tags-table">
+                        <thead>
+                            <tr>
+                                <th>Tag Number</th>
+                                <th>Company ID</th>
+                                <th>Status</th>
+                                <th>Parking</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tags-body">
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-dim);">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="tags-feedback" class="feedback"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
+
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const apiKey = document.getElementById('api-key').value;
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey
+                }
+            };
+            if (body) options.body = JSON.stringify(body);
+            
+            const response = await fetch(`${API_BASE}${endpoint}`, options);
+            return await response.json();
+        }
+
+        async function fetchHealth() {
+            try {
+                const res = await apiCall('/health');
+                const statusBadge = document.getElementById('system-status');
+                if (res.status === 'healthy') {
+                    statusBadge.innerHTML = '<div class="status-dot"></div> System Online - Database Connected';
+                    statusBadge.style.color = 'var(--success-color)';
+                    statusBadge.style.background = 'rgba(16, 185, 129, 0.1)';
+                    statusBadge.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+                } else {
+                    throw new Error();
+                }
+            } catch (e) {
+                const statusBadge = document.getElementById('system-status');
+                statusBadge.innerHTML = '<div class="status-dot" style="background:var(--error-color); box-shadow:0 0 10px var(--error-color);"></div> System Offline - Connection Failed';
+                statusBadge.style.color = 'var(--error-color)';
+                statusBadge.style.background = 'rgba(239, 68, 68, 0.1)';
+                statusBadge.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+            }
+        }
+
+        async function processGate(type) {
+            const tag = parseInt(document.getElementById('tag-input').value);
+            const gateId = document.getElementById('gate-input').value;
+            const feedback = document.getElementById('gate-feedback');
+            
+            if (!tag) {
+                feedback.textContent = 'Please enter a valid tag number.';
+                feedback.className = 'feedback error';
+                return;
+            }
+
+            try {
+                const res = await apiCall(`/gate/${type}`, 'POST', { tag, gateId });
+                if (res.status === 'success') {
+                    feedback.textContent = res.message || 'Action successful!';
+                    feedback.className = 'feedback success';
+                    // Refresh data
+                    fetchCapacity();
+                    fetchTags();
+                } else {
+                    feedback.textContent = res.message || res.error || 'Action failed.';
+                    feedback.className = 'feedback error';
+                }
+            } catch (e) {
+                feedback.textContent = 'Server communication error.';
+                feedback.className = 'feedback error';
+            }
+        }
+
+        async function addCompany() {
+            const companyId = parseInt(document.getElementById('company-id-input').value);
+            const companyName = document.getElementById('company-name-input').value;
+            const totalSlots = parseInt(document.getElementById('total-slots-input').value);
+            const feedback = document.getElementById('company-feedback');
+
+            if (!companyId || !companyName || !totalSlots) {
+                feedback.textContent = 'All fields are required.';
+                feedback.className = 'feedback error';
+                return;
+            }
+
+            try {
+                const res = await apiCall('/companies', 'POST', { companyId, companyName, totalSlots });
+                if (res.status === 'success') {
+                    feedback.textContent = 'Company added successfully!';
+                    feedback.className = 'feedback success';
+                    // Clear inputs
+                    document.getElementById('company-id-input').value = '';
+                    document.getElementById('company-name-input').value = '';
+                    document.getElementById('total-slots-input').value = '';
+                    // Refresh data
+                    fetchCompanies();
+                    fetchCapacity();
+                } else {
+                    feedback.textContent = res.error || 'Failed to add company.';
+                    feedback.className = 'feedback error';
+                }
+            } catch (e) {
+                feedback.textContent = 'Server communication error.';
+                feedback.className = 'feedback error';
+            }
+        }
+
+        async function fetchCompanies() {
+            const res = await apiCall('/companies');
+            const tbody = document.getElementById('companies-body');
+            if (res.status === 'success' && res.data) {
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No companies found.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(c => `
+                    <tr>
+                        <td>${c.CompanyID}</td>
+                        <td>${c.CompanyName}</td>
+                        <td>${c.TotalSlots}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function fetchCapacity() {
+            const res = await apiCall('/capacity');
+            const container = document.getElementById('capacity-overview-list');
+            if (res.status === 'success' && res.data) {
+                if (res.data.length === 0) {
+                    container.innerHTML = '<p style="color:var(--text-dim); font-size:0.9rem;">No data available.</p>';
+                    return;
+                }
+                container.innerHTML = res.data.map(c => {
+                    const percent = (c.CurrentlyParked / c.TotalSlots) * 100;
+                    return `
+                        <div class="capacity-item">
+                            <div class="capacity-header">
+                                <span class="company-title">${c.CompanyName}</span>
+                                <span class="slot-count">${c.CurrentlyParked}/${c.TotalSlots} slots</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar" style="width: ${percent}%"></div>
+                            </div>
+                            <div class="available-text">${Math.round(percent)}% occupied • ${c.FreeSpaces} available</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        async function fetchTags() {
+            const feedback = document.getElementById('tags-feedback');
+            try {
+                const res = await apiCall('/tags');
+                const tbody = document.getElementById('tags-body');
+                if (res.status === 'success' && res.data) {
+                    if (res.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No tags found.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = res.data.map(t => `
+                        <tr>
+                            <td>${t.TagNumber}</td>
+                            <td>${t.CompanyID}</td>
+                            <td><span class="badge ${t.IsActive ? 'badge-active' : 'badge-inactive'}">${t.IsActive ? 'Active' : 'Inactive'}</span></td>
+                            <td><span class="badge ${t.IsParked ? 'badge-parked' : ''}">${t.IsParked ? 'Parked' : 'Outside'}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                feedback.textContent = 'Failed to load tags.';
+                feedback.className = 'feedback error';
+            }
+        }
+
+        // Initial load
+        fetchHealth();
+        fetchCompanies();
+        fetchCapacity();
+        fetchTags();
+
+        // Auto-refresh capacity every 10 seconds
+        setInterval(() => {
+            fetchHealth();
+            fetchCapacity();
+        }, 10000);
+    </script>
+</body>
+</html>

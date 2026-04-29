@@ -109,6 +109,14 @@ class ParkingService {
     }
 
     /**
+     * List all RFID tags.
+     */
+    async getAllTags() {
+        const [tags] = await db.execute('SELECT TagNumber, CompanyID, IsActive, IsParked FROM RFID_Tags ORDER BY CompanyID, TagNumber');
+        return tags;
+    }
+
+    /**
      * Process vehicle entry.
      */
     async processEntry(tag, gateId) {
